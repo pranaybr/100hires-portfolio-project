@@ -20,7 +20,23 @@ Public portfolio documenting setup of AI dev tools in Cursor for the 100Hires ap
 
 ## Issues & Solutions
 
-**Two Claude Code icons:** I saw two identical icons after installing Claude Code once. I disabled the extension in Extensions (`Cmd + Shift + X`) and both icons disappeared—so I confirmed it was one install, not a duplicate. I learned this is a known Cursor quirk: Claude Code registers chat and sessions as separate views, and Cursor puts both in the activity bar. I used either icon or opened Claude Code via the Command Palette or terminal (`claude`). I couldn’t hide just one icon, but it didn’t affect usage.
+### Two Claude Code icons in the activity bar
+
+**Problem:** After installing Claude Code once, I saw two identical icons in Cursor’s activity bar.
+
+**Cause:** I learned it’s a known Cursor quirk, not a double install. Claude Code registers two sidebar views—the main chat panel and a sessions list. Cursor doesn’t fully support the secondary sidebar, so both views end up in the activity bar.
+
+**How to verify:** I disabled the extension in Extensions (`Cmd + Shift + X`). Both icons disappeared together, confirming one install with two views.
+
+**Solution:** I used either icon (chat vs. sessions) or opened Claude Code via Command Palette (`Cmd + Shift + P` → **Claude Code: Open in New Tab** or **Open in sidebar**) or the terminal (`claude`). I couldn’t hide just one icon, but it didn’t affect usage.
+
+### GitHub README didn’t match my local file
+
+**Problem:** The README on GitHub was missing parts of my Issues & Solutions section compared to what I had locally.
+
+**Cause:** I edited the README after the initial commit. Cursor’s automated push failed because GitHub credentials weren’t configured in that environment, so only the earlier committed version reached GitHub until I pushed again.
+
+**Solution:** I checked `git status`, committed my latest README changes, and pushed to `origin main`.
 
 ## Author
 
