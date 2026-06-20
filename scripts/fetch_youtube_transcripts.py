@@ -1,173 +1,199 @@
-"""Fetch English YouTube transcripts and save them as text files.
+"""Download and clean auto-generated English YouTube transcripts with yt-dlp.
 
-This script accepts one or more YouTube video IDs from the command line, uses
-the ``youtube_transcript_api`` package to fetch each video's English transcript,
-and writes each transcript to an individual ``.txt`` file.
+Requirements:
+    - Python standard library only.
+    - The ``yt-dlp`` command-line tool must be installed and available on PATH.
 
-Output files are written to ``../research/youtube-transcripts/`` relative to
-this script's location. In this repository, that resolves to
-``research/youtube-transcripts/``.
+Usage:
+    1. Set ``creator_name`` and ``video_urls`` below.
+    2. Run: ``python scripts/fetch_youtube_transcripts.py``
 
-Example:
-    python scripts/fetch_youtube_transcripts.py dQw4w9WgXcQ abc123xyz
-
-Dependency:
-    pip install youtube-transcript-api
+The script downloads auto-generated English subtitles as ``.en.vtt`` files,
+removes timestamps and VTT/HTML tags with regular expressions, then writes clean
+plain-text transcripts to ``research/youtube-transcripts/``. It uses the
+``cookies.txt`` file in the project root for YouTube session authentication.
 """
 
-from __future__ import annotations
-
-import argparse
+import json
+import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
-from typing import Iterable
-
-from youtube_transcript_api import (
-    NoTranscriptFound,
-    TranscriptsDisabled,
-    VideoUnavailable,
-    YouTubeTranscriptApi,
-)
 
 
-OUTPUT_DIR = Path(__file__).resolve().parent / "../research/youtube-transcripts"
+creator_name = "chris_walker"
+video_urls = [
+    "https://www.youtube.com/watch?v=jjLryGdFJZA",
+    "https://www.youtube.com/watch?v=dZx610FbOBc",
+    "https://www.youtube.com/watch?v=YdEpv0ZAP10",
+    "https://www.youtube.com/watch?v=JkXom1dC_20",
+    "https://www.youtube.com/watch?v=WVD9dzd0SL4",
+]
+
+OUTPUT_DIR = Path("research/youtube-transcripts")
+COOKIES_FILE = Path("cookies.txt")
+YT_DLP_COMMAND = [sys.executable, "-m", "yt_dlp"]
+YT_DLP_EXTRACTOR_ARGS = ["--extractor-args", "youtube:player_client=android"]
+YT_DLP_IMPERSONATION = ["--impersonate", "chrome"]
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for the transcript fetcher.
-
-    Returns:
-        An ``argparse.Namespace`` with a ``video_ids`` attribute containing the
-        YouTube video IDs passed by the user.
-    """
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "Fetch English transcripts for one or more YouTube video IDs and "
-            "save each transcript as a .txt file."
-        )
-    )
-    parser.add_argument(
-        "video_ids",
-        nargs="+",
-        help="One or more YouTube video IDs, not full YouTube URLs.",
-    )
-    return parser.parse_args()
-
-
-def format_transcript(transcript_entries: Iterable[dict[str, object]]) -> str:
-    """Convert transcript entries from the API into plain text.
-
-    The YouTube Transcript API returns a list-like collection of entries, where
-    each entry typically includes ``text``, ``start``, and ``duration`` fields.
-    This function extracts only the spoken text and joins each caption segment
-    with a newline so the output is easy to read and search.
+def clean_vtt_text(vtt_text):
+    """Convert raw VTT subtitle text into a clean plain-text transcript.
 
     Args:
-        transcript_entries: Transcript entries returned by
-            ``YouTubeTranscriptApi().fetch``.
+        vtt_text: The raw contents of a ``.vtt`` subtitle file downloaded by
+            ``yt-dlp``.
 
     Returns:
-        A plain-text transcript string ending with a trailing newline.
+        A cleaned transcript string with VTT headers, timestamps, cue settings,
+        and inline tags removed.
     """
 
-    lines = []
-    for entry in transcript_entries:
-        text = entry.get("text", "") if isinstance(entry, dict) else entry.text
-        lines.append(str(text).strip())
-    return "\n".join(line for line in lines if line) + "\n"
+    cleaned_lines = []
+
+    for line in vtt_text.splitlines():
+        line = line.strip()
+
+        if not line:
+            continue
+        if line == "WEBVTT":
+            continue
+        if line.startswith(("Kind:", "Language:")):
+            continue
+        if "-->" in line:
+            continue
+
+        line = re.sub(r"<[^>]+>", "", line)
+        line = re.sub(r"&amp;", "&", line)
+        line = re.sub(r"&lt;", "<", line)
+        line = re.sub(r"&gt;", ">", line)
+        line = re.sub(r"\s+", " ", line).strip()
+
+        if line:
+            cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines) + "\n"
 
 
-def transcript_path(video_id: str, output_dir: Path = OUTPUT_DIR) -> Path:
-    """Build the output path for a video's transcript text file.
+def get_video_id(video_url):
+    """Ask yt-dlp for the canonical video ID for a YouTube URL.
 
     Args:
-        video_id: The YouTube video ID whose transcript is being saved.
-        output_dir: Directory where transcript files should be written.
+        video_url: A full YouTube video URL.
 
     Returns:
-        The full path to the transcript file for ``video_id``.
-    """
-
-    return output_dir / f"{video_id}.txt"
-
-
-def fetch_english_transcript(video_id: str) -> str:
-    """Fetch and format the English transcript for a YouTube video.
-
-    Args:
-        video_id: The YouTube video ID to fetch.
-
-    Returns:
-        The video's English transcript as plain text.
+        The canonical YouTube video ID reported by ``yt-dlp``.
 
     Raises:
-        TranscriptsDisabled: If captions are disabled for the video.
-        NoTranscriptFound: If captions exist, but no English transcript is
-            available.
-        VideoUnavailable: If the video cannot be accessed by the transcript API.
+        subprocess.CalledProcessError: If ``yt-dlp`` cannot read the metadata.
+        KeyError: If the metadata response does not contain an ``id`` field.
     """
 
-    transcript_entries = YouTubeTranscriptApi().fetch(
-        video_id,
-        languages=["en"],
+    command = [
+        *YT_DLP_COMMAND,
+        "--skip-download",
+        "--dump-json",
+        *YT_DLP_EXTRACTOR_ARGS,
+        *YT_DLP_IMPERSONATION,
+        "--cookies",
+        str(COOKIES_FILE),
+        video_url,
+    ]
+
+    result = subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        text=True,
     )
-    return format_transcript(transcript_entries)
+    video_info = json.loads(result.stdout)
+
+    return video_info["id"]
 
 
-def save_transcript(
-    video_id: str,
-    transcript_text: str,
-    output_dir: Path = OUTPUT_DIR,
-) -> Path:
-    """Save a transcript to an individual ``.txt`` file.
-
-    The destination directory is created automatically if it does not already
-    exist.
+def download_auto_english_vtt(video_url, video_id, download_dir):
+    """Download a video's auto-generated English subtitles as a VTT file.
 
     Args:
-        video_id: The YouTube video ID used as the output filename.
-        transcript_text: The formatted transcript text to write.
-        output_dir: Directory where transcript files should be written.
+        video_url: The full YouTube URL to process.
+        video_id: The canonical YouTube video ID.
+        download_dir: Temporary directory where ``yt-dlp`` should save the VTT.
 
     Returns:
-        The path to the written transcript file.
+        The path to the downloaded ``.en.vtt`` file.
+
+    Raises:
+        subprocess.CalledProcessError: If ``yt-dlp`` fails for the video.
+        FileNotFoundError: If ``yt-dlp`` completes but no English VTT is found.
     """
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = transcript_path(video_id, output_dir)
-    output_path.write_text(transcript_text, encoding="utf-8")
+    output_template = str(download_dir / "%(id)s.%(ext)s")
+    subprocess.run(
+        [
+            *YT_DLP_COMMAND,
+            "--skip-download",
+            *YT_DLP_EXTRACTOR_ARGS,
+            *YT_DLP_IMPERSONATION,
+            "--write-auto-subs",
+            "--sub-lang",
+            "en",
+            "--sub-format",
+            "vtt",
+            "--sleep-subtitles",
+            "5",
+            "--cookies",
+            str(COOKIES_FILE),
+            "--output",
+            output_template,
+            video_url,
+        ],
+        check=True,
+    )
+
+    matches = sorted(download_dir.glob(f"{video_id}.en*.vtt"))
+    if not matches:
+        raise FileNotFoundError(f"No English VTT file found for {video_id}")
+
+    return matches[0]
+
+
+def save_clean_transcript(video_id, vtt_path):
+    """Clean a downloaded VTT file and save it as a transcript text file.
+
+    Args:
+        video_id: The YouTube video ID being processed.
+        vtt_path: Path to the downloaded ``.en.vtt`` file.
+
+    Returns:
+        The path to the saved plain-text transcript.
+    """
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    raw_vtt = vtt_path.read_text(encoding="utf-8")
+    cleaned_text = clean_vtt_text(raw_vtt)
+
+    output_path = OUTPUT_DIR / f"{creator_name}_{video_id}.txt"
+    output_path.write_text(cleaned_text, encoding="utf-8")
+
     return output_path
 
 
-def fetch_and_save_transcripts(video_ids: Iterable[str]) -> None:
-    """Fetch English transcripts for a list of videos and save each to disk.
+def main():
+    """Download, clean, and save transcripts for all configured video URLs."""
 
-    Each video is processed independently. If a video has captions disabled, is
-    unavailable, or does not have an English transcript, the script prints a
-    short message and continues processing the remaining video IDs.
+    for video_url in video_urls:
+        print(f"Downloading transcript for {video_url}...")
 
-    Args:
-        video_ids: An iterable of YouTube video IDs.
-    """
-
-    for video_id in video_ids:
         try:
-            transcript_text = fetch_english_transcript(video_id)
-            output_path = save_transcript(video_id, transcript_text)
-            print(f"Saved transcript for {video_id}: {output_path}")
-        except TranscriptsDisabled:
-            print(f"Skipped {video_id}: captions are disabled.")
-        except NoTranscriptFound:
-            print(f"Skipped {video_id}: no English transcript was found.")
-        except VideoUnavailable:
-            print(f"Skipped {video_id}: video is unavailable.")
-
-
-def main() -> None:
-    """Run the transcript fetcher from command-line arguments."""
-
-    args = parse_args()
-    fetch_and_save_transcripts(args.video_ids)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                video_id = get_video_id(video_url)
+                vtt_path = download_auto_english_vtt(video_url, video_id, Path(temp_dir))
+                output_path = save_clean_transcript(video_id, vtt_path)
+                print(f"Saved: {output_path}")
+        except Exception as error:
+            print(f"Skipped {video_url}: {error}")
 
 
 if __name__ == "__main__":
