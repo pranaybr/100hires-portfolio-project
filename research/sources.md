@@ -35,11 +35,11 @@
 * **Links:** [LinkedIn](https://www.linkedin.com/in/saralattanzio/) | Guest Appearances *(Note: Does not own a dedicated YouTube channel)*: [Video 1](https://www.youtube.com/watch?v=lMd_tksbJEs), [Video 2](https://www.youtube.com/watch?v=EWcTdt33-7I)
 * **Annotation:** Provides highly tactical, step-by-step tear-downs of how specific SaaS companies run their corporate and personal LinkedIn pages.
 
-### 6. Tommy Clark
+### 6. Justin Welsh
 * **Date Collected:** June 21, 2026
-* **Focus:** B2B Social Video & Distribution
-* **Links:** [LinkedIn](https://www.linkedin.com/in/tommyclark1/) | [YouTube](https://www.youtube.com/@TommyClark)
-* **Annotation:** Specializes in turning complex, dry SaaS concepts into digestible, high-performing organic social video content for LinkedIn and YouTube Shorts.
+* **Focus:** Solopreneur B2B Growth & LinkedIn Systems
+* **Links:** [LinkedIn](https://www.linkedin.com/in/thejustinwelsh/) | Guest Appearances: [Video 1](https://www.youtube.com/watch?v=0UxQbhaoMlQ), [Video 2](https://www.youtube.com/watch?v=Mp8m-ysmfq4), [Video 3](https://www.youtube.com/watch?v=rAHaXzfy5nA), [Video 4](https://www.youtube.com/watch?v=Pv24uWUJ794), [Video 5](https://www.youtube.com/watch?v=SkR3XB6Bvq8)
+* **Annotation:** A 7-figure solopreneur who scaled a content business to $10M without a team. His content focuses on productizing expertise and building automated LinkedIn content systems.
 
 ### 7. Brendan Hufford
 * **Date Collected:** June 21, 2026
