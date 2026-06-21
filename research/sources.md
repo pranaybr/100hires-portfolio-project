@@ -38,7 +38,7 @@
 ### 6. Justin Welsh
 * **Date Collected:** June 21, 2026
 * **Focus:** Solopreneur B2B Growth & LinkedIn Systems
-* **Links:** [LinkedIn](https://www.linkedin.com/in/thejustinwelsh/) | Guest Appearances: [Video 1](https://www.youtube.com/watch?v=0UxQbhaoMlQ), [Video 2](https://www.youtube.com/watch?v=Mp8m-ysmfq4), [Video 3](https://www.youtube.com/watch?v=rAHaXzfy5nA), [Video 4](https://www.youtube.com/watch?v=Pv24uWUJ794), [Video 5](https://www.youtube.com/watch?v=SkR3XB6Bvq8)
+* **Links:** [LinkedIn](https://www.linkedin.com/in/justinwelsh/) | Guest Appearances: [Video 1](https://www.youtube.com/watch?v=0UxQbhaoMlQ), [Video 2](https://www.youtube.com/watch?v=Mp8m-ysmfq4), [Video 3](https://www.youtube.com/watch?v=rAHaXzfy5nA), [Video 4](https://www.youtube.com/watch?v=Pv24uWUJ794), [Video 5](https://www.youtube.com/watch?v=SkR3XB6Bvq8)
 * **Annotation:** A 7-figure solopreneur who scaled a content business to $10M without a team. His content focuses on productizing expertise and building automated LinkedIn content systems.
 
 ### 7. Brendan Hufford
