@@ -22,8 +22,6 @@ from urllib.parse import parse_qs, urlparse
 from apify_client import ApifyClient
 
 
-APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
-ACTOR_ID = "topaz_sharingan~youtube-transcript-scraper"
 
 creator_name = "chris_walker"
 video_urls = [
