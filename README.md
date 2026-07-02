@@ -25,7 +25,7 @@ The 10 cover distinct angles without overlapping too much — demand creation vs
 
 ## How this was built
 
-I used Cursor and Codex to attempt API-based collection (YouTube transcripts, LinkedIn posts). LinkedIn and Google actively block scraping, so a significant portion ended up being collected and organized manually. Git was new to me going into this — the commit history reflects the learning curve.
+I used Cursor and Codex to attempt API-based collection (YouTube transcripts, LinkedIn posts). Git was new to me going into this — the commit history reflects the learning curve.
 
 ---
 
